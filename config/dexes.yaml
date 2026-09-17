@@ -1,0 +1,143 @@
+# ---------------------------------------------------------------------------
+# DEX adapter configuration.
+#
+# Every address in this file is *configuration data*, not code. Each entry
+# records where the address was obtained and how it was verified on-chain.
+# An adapter is only enabled when every address it needs is present and the
+# startup verification (`conflux-analytics health --verify-addresses`) passes.
+#
+# Addresses are stored lowercase; the code normalises them to EIP-55
+# checksummed form for display. Nothing here is hard-coded in Python.
+# ---------------------------------------------------------------------------
+
+tokens:
+  # Tokens the collector is allowed to discover markets for. Decimals, symbol
+  # and name are always read from the chain at runtime - they are deliberately
+  # not stored here so that configuration cannot drift from on-chain reality.
+  - address: "0x14b2d3bc65e74dae1030eafd8ac30c533c976a9b"
+    label: WCFX
+    role: wrapped_native
+    sources:
+      - "https://docs.swappi.io/swappi/quick-reference/token-contract-addresses.md"
+      - "https://github.com/conflux-fans/espace-uniswap-lib/blob/main/src/networks/mainnet.js"
+  - address: "0xaf37e8b6c9ed7f6318979f56fc287d76c30847ff"
+    label: USDT0
+    role: stablecoin
+    sources:
+      - "https://github.com/conflux-fans/espace-uniswap-lib/blob/main/src/networks/mainnet.js"
+  - address: "0xfe97e85d13abd9c1c33384e796f10b73905637ce"
+    label: USDT (bridged)
+    role: stablecoin
+    sources:
+      - "https://docs.swappi.io/swappi/quick-reference/token-contract-addresses.md"
+      - "https://github.com/conflux-fans/espace-uniswap-lib/blob/main/src/networks/mainnet.js"
+  - address: "0x6963efed0ab40f6c3d7bda44a05dcf1437c44372"
+    label: USDC (bridged)
+    role: stablecoin
+    sources:
+      - "https://docs.swappi.io/swappi/quick-reference/token-contract-addresses.md"
+      - "https://github.com/conflux-fans/espace-uniswap-lib/blob/main/src/networks/mainnet.js"
+  - address: "0xa47f43de2f9623acb395ca4905746496d2014d57"
+    label: ETH (bridged)
+    role: other
+    sources:
+      - "https://docs.swappi.io/swappi/quick-reference/token-contract-addresses.md"
+  - address: "0x1f545487c62e5acfea45dcadd9c627361d1616d8"
+    label: WBTC (bridged)
+    role: other
+    sources:
+      - "https://docs.swappi.io/swappi/quick-reference/token-contract-addresses.md"
+  - address: "0x22f41abf77905f50df398f21213290597e7414dd"
+    label: PPI
+    role: other
+    sources:
+      - "https://docs.swappi.io/swappi/about-swappi/swappi-contract-addresses.md"
+
+dexes:
+  # -------------------------------------------------------------------------
+  - dex_id: swappi_v2
+    name: Swappi V2
+    pool_type: constant_product
+    enabled: true
+    documentation: "https://docs.swappi.io/"
+    contracts:
+      factory:
+        address: "0xe2a6f7c0ce4d5d300f97aa7e125455f5cd3342f5"
+        sources:
+          - "https://docs.swappi.io/swappi/about-swappi/swappi-contract-addresses.md"
+          - "https://github.com/conflux-fans/espace-uniswap-lib/blob/main/src/networks/mainnet.js"
+      router:
+        address: "0xe37b52296b0baa91412cd0cd97975b0805037b84"
+        note: "Router used for quoting; verified in the conflux-fans eSpace preset."
+        sources:
+          - "https://github.com/conflux-fans/espace-uniswap-lib/blob/main/src/networks/mainnet.js"
+      legacy_router:
+        address: "0x62b0873055bf896dd869e172119871ac24aea305"
+        note: "Listed as SwappiRouter in the official docs."
+        sources:
+          - "https://docs.swappi.io/swappi/about-swappi/swappi-contract-addresses.md"
+    discovery:
+      method: factory
+      # factory.allPairsLength() / factory.allPairs(uint256) enumeration.
+      enumerable: true
+    quoting:
+      method: router_quote
+      function: "getAmountsOut(uint256,address[])"
+    fee:
+      # Derived on-chain: router.getAmountsOut() was reproduced exactly by the
+      # constant-product formula with a 25 bps fee numerator for several trade
+      # sizes in both directions (see docs/dex-integrations.md).
+      bps: 25
+      numerator: 9975
+      denominator: 10000
+      source: "derived_from_router_quote_on_chain"
+    events:
+      swap: "Swap(address,uint256,uint256,uint256,uint256,address)"
+      mint: "Mint(address,uint256,uint256)"
+      burn: "Burn(address,uint256,uint256,address)"
+
+  # -------------------------------------------------------------------------
+  - dex_id: vswap_v3
+    name: vSwap (WallFreeX V3)
+    pool_type: concentrated_liquidity
+    enabled: true
+    documentation: "https://github.com/conflux-fans/espace-uniswap-lib"
+    contracts:
+      factory:
+        address: "0x50caddc77c6727bdd3c78b428c149bf110b4f595"
+        sources:
+          - "https://github.com/conflux-fans/espace-uniswap-lib/blob/main/src/networks/mainnet.js"
+      router:
+        address: "0x3b02e356d09e758e2711bc64cf33e48f3e1239b8"
+        note: "SwapRouter-style contract; verified via router.factory() == factory."
+        sources:
+          - "https://github.com/conflux-fans/espace-uniswap-lib/blob/main/src/networks/mainnet.js"
+      quoter_v2:
+        address: "0x085c0e2695b6d5f6483f083db6657c3164520d9c"
+        note: "QuoterV2 tuple interface verified by a live eth_call."
+        sources:
+          - "https://github.com/conflux-fans/espace-uniswap-lib/blob/main/src/networks/mainnet.js"
+      nft_position_manager:
+        address: "0xaaea97033dfe8aebdd9d4ae9d5856678b8f7e127"
+        note: "Reports name() = 'vSwap Positions NFT-V1' on-chain."
+        sources:
+          - "https://github.com/conflux-fans/espace-uniswap-lib/blob/main/src/networks/mainnet.js"
+    discovery:
+      method: factory_getPool
+      # Uniswap-V3 style factories are not enumerable: pools are looked up per
+      # (token0, token1, fee) tuple via factory.getPool().
+      enumerable: false
+      fee_tiers: [500, 3000, 10000]
+      tick_spacing: {500: 10, 3000: 60, 10000: 200}
+    quoting:
+      method: contract_simulation
+      function: "quoteExactInputSingle((address,address,uint256,uint24,uint160))"
+    fee:
+      # Per-pool fee tier read from pool.fee(); bps = fee_tier / 100.
+      source: pool_fee_tier
+      tiers: [500, 3000, 10000]
+    events:
+      swap: "Swap(address,address,int256,int256,uint160,uint128,int24)"
+      mint: "Mint(address,address,int24,int24,uint128,uint256,uint256)"
+      burn: "Burn(address,int24,int24,uint128,uint256,uint256)"
+      pool_created: "PoolCreated(address,address,uint24,int24,address)"

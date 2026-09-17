@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "conflux-liquidity-execution-analytics"
+version = "0.1.0"
+description = "Liquidity and execution analytics layer for Conflux eSpace DEX markets"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Pillar 5" }]
+dependencies = [
+    "httpx>=0.27,<1",
+    "pydantic>=2.6,<3",
+    "pydantic-settings>=2.2,<3",
+    "PyYAML>=6.0,<7",
+    "python-dotenv>=1.0,<2",
+    "pycryptodome>=3.20,<4",
+    "fastapi>=0.110,<1",
+    "uvicorn>=0.29,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8,<10",
+    "ruff>=0.4",
+]
+
+[project.scripts]
+conflux-analytics = "conflux_analytics.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-m 'not integration'"
+markers = [
+    "integration: tests that require a live Conflux eSpace RPC endpoint",
+]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]

@@ -1,0 +1,73 @@
+# ---------------------------------------------------------------------------
+# Default configuration for Conflux Liquidity & Execution Analytics.
+#
+# Operational settings live here; secrets and machine-specific overrides come
+# from environment variables (.env). See .env.example for the full list.
+# ---------------------------------------------------------------------------
+
+network:
+  name: mainnet
+  chain_id: 1030
+  rpc_url: https://evm.confluxrpc.com
+  ws_rpc_url: null
+  explorer_url: https://evm.confluxscan.org
+  # The explorer HTTP API is an optional *secondary* source. It is only used by
+  # the explicit `verify-addresses` command, never for the core pipeline.
+  explorer_api_url: https://evmapi.confluxscan.io/api
+  native_symbol: CFX
+  rpc_timeout_seconds: 20.0
+  rpc_max_retries: 3
+  rpc_retry_backoff_seconds: 0.5
+
+database:
+  path: data/conflux_analytics.db
+
+collector:
+  # eth_getLogs is always issued in bounded block ranges.
+  log_chunk_size: 2000
+  max_blocks_per_run: 20000
+  # Number of pools the market-state collector touches per run (deterministic
+  # ordering by liquidity, so results are reproducible).
+  max_pools: 25
+  # Minimum total pool depth (token0 + token1) to keep a discovered pool.
+  # Expressed in *raw* smallest units of token0; 0 keeps every pool.
+  min_pool_reserve_raw: 0
+  # Skip pools whose (token0 + token1) USD depth is below this value. Requires a
+  # price source; when no price is available the filter is skipped and the pool
+  # is reported with status `unavailable`.
+  min_pool_reserve_usd: null
+  checkpoints_enabled: true
+  # Blocks to look back from the chain head when no explicit range is given.
+  default_lookback_blocks: 5000
+
+trade_sizes:
+  # Whole input-token units, converted with the input token decimals. Use
+  # `raw_amount` for an explicit integer amount in smallest units.
+  - label: small
+    amount: "1"
+  - label: medium
+    amount: "10"
+  - label: large
+    amount: "100"
+
+pricing:
+  # Explicit, documented peg assumptions. Empty by default: USD fields remain
+  # null unless either a peg is declared or a DEX-derived price path exists.
+  stablecoin_pegs: {}
+  external_api:
+    enabled: false
+    url: null
+
+logging:
+  level: INFO
+  format: text
+  file: null
+
+api:
+  host: 127.0.0.1
+  port: 8000
+
+dashboard:
+  enabled: true
+  # Serve the dashboard from the API process (single modular monolith).
+  mount_path: /dashboard
